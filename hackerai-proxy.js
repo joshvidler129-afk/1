@@ -18,12 +18,49 @@
 
 "use strict";
 
+const fs = require("fs");
 const path = require("path");
 const http = require("http");
 const https = require("https");
+const readline = require("readline");
 const { execSync } = require("child_process");
 
 const CUSTOM = "custom";
+const DEFAULT_ENDPOINT = "https://api.hackwithclaude.com";
+
+function loadDotEnv(file) {
+  let text;
+  try {
+    text = fs.readFileSync(file, "utf8");
+  } catch (_) {
+    return;
+  }
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (!m) continue;
+    let v = m[2];
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+      v = v.slice(1, -1);
+    }
+    if (process.env[m[1]] === undefined) process.env[m[1]] = v;
+  }
+}
+
+async function promptSetup(file) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q) => new Promise((resolve) => rl.question(q, (a) => resolve(a.trim())));
+  console.log("First run: where should HackerAI send requests?");
+  const base = (await ask(`Endpoint [${DEFAULT_ENDPOINT}]: `)) || DEFAULT_ENDPOINT;
+  const key = await ask("API key: ");
+  rl.close();
+  if (!key) return false;
+  fs.writeFileSync(file, `ANTHROPIC_BASE_URL=${base}\nANTHROPIC_API_KEY=${key}\n`, { mode: 0o600 });
+  console.log(`Saved to ${file} (ignored by git).`);
+  process.env.ANTHROPIC_BASE_URL = base;
+  process.env.ANTHROPIC_API_KEY = key;
+  return true;
+}
 
 function esc(s) {
   return String(s).replace(/\{/g, "\\{").replace(/\}/g, "\\}");
@@ -365,17 +402,23 @@ function applyPatches(pkgDir, { baseURL, apiKey, host, models }) {
   };
 }
 
+function readEnv() {
+  return {
+    rawBase: (process.env.HACKERAI_BASE_URL || process.env.ANTHROPIC_BASE_URL || "").replace(/\/+$/, ""),
+    apiKey: process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || "",
+  };
+}
+
 async function main() {
-  const rawBase = (
-    process.env.HACKERAI_BASE_URL ||
-    process.env.ANTHROPIC_BASE_URL ||
-    ""
-  ).replace(/\/+$/, "");
-  const apiKey =
-    process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN || "";
+  const envFile = path.join(__dirname, ".env");
+  loadDotEnv(envFile);
+  let { rawBase, apiKey } = readEnv();
+  if (!rawBase || !apiKey) {
+    if (await promptSetup(envFile)) ({ rawBase, apiKey } = readEnv());
+  }
   if (!rawBase || !apiKey) {
     console.error(
-      "Error: set ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN)."
+      `Error: set ANTHROPIC_BASE_URL and ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN), or put them in ${envFile}.`
     );
     process.exit(1);
   }
