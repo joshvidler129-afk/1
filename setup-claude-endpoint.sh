@@ -16,6 +16,7 @@ if [[ -z "$BASE_URL" || -z "$AUTH_TOKEN" ]]; then
 fi
 
 export ANTHROPIC_BASE_URL="$BASE_URL"
+export ANTHROPIC_API_KEY="$AUTH_TOKEN"
 export ANTHROPIC_AUTH_TOKEN="$AUTH_TOKEN"
 
 exec claude "$@"
