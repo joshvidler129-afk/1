@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-command launcher: installs the pinned hackerai into ./node_modules on
-# first run, then starts it against the endpoint in .env (created on first
-# run if missing).
+# first run, then starts it. Log in inside the app with /login (HackerAI
+# account) or /addkey (Groq, Gemini, ...).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -15,4 +15,4 @@ if [ ! -d node_modules/hackerai ]; then
   npm install --no-audit --no-fund --loglevel=error
 fi
 
-exec node hackerai-proxy.js "$@"
+exec node node_modules/hackerai/index.js "$@"

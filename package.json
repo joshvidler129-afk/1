@@ -2,9 +2,9 @@
   "name": "hackerai-local",
   "private": true,
   "version": "1.0.0",
-  "description": "HackerAI on your own device, talking to your own API endpoint",
+  "description": "HackerAI on your own device",
   "scripts": {
-    "start": "node hackerai-proxy.js"
+    "start": "node node_modules/hackerai/index.js"
   },
   "dependencies": {
     "hackerai": "3.0.4"

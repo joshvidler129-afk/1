@@ -13,7 +13,7 @@ fi
 # Ensure the setup script is executable
 chmod +x "$CLAUDE_PROJECT_DIR/setup-claude-endpoint.sh"
 
-# Install the pinned hackerai that hackerai-proxy.js patches
+# Install the pinned hackerai that run.sh launches
 if [ -f "$CLAUDE_PROJECT_DIR/package.json" ] && [ ! -d "$CLAUDE_PROJECT_DIR/node_modules/hackerai" ]; then
   (cd "$CLAUDE_PROJECT_DIR" && npm install --no-audit --no-fund --loglevel=error) || true
 fi
