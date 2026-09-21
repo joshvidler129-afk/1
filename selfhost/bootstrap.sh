@@ -19,6 +19,13 @@ log()  { printf '\n\033[1;32m==>\033[0m %s\n' "$1"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$1" >&2; }
 die()  { printf '\033[1;31m[x]\033[0m %s\n' "$1" >&2; exit 1; }
 
+# This is a server script. It cannot set up the app on Android/Termux: pnpm's
+# native binary and the app's Node/Convex/Trigger stack have no android-arm64
+# build. Bail early with a clear message instead of a confusing pnpm error.
+if [ "$(uname -o 2>/dev/null)" = "Android" ] || [ -n "${TERMUX_VERSION:-}" ] || case "$(uname -a)" in *Android*) true ;; *) false ;; esac; then
+  die "This runs on your Linux SERVER (VPS), not on the phone/Termux. The full HackerAI app has no Android build. SSH into your server and run it there — see selfhost/README.md."
+fi
+
 command -v curl >/dev/null 2>&1 || die "curl is required (sudo apt-get install -y curl)."
 command -v sudo >/dev/null 2>&1 || die "sudo is required."
 command -v apt-get >/dev/null 2>&1 || die "This bootstrap targets Debian/Ubuntu (apt-get). On another distro, install Node 20 + git + corepack manually, then run 'pnpm install' in the repo."
